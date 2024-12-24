@@ -38,6 +38,14 @@ func applyGuassianBlur(image:CIImage,radius:Float)->CIImage?{
     return filter.outputImage
 }
 
+//应用高光滤镜
+func applyHighlightShadowAdjust(image:CIImage,highlightAmount:Float,shadowAmount:Float)->CIImage?{
+    guard let filter = CIFilter(name: "CIHighlightShadowAdjust") else { return nil }
+    filter.setValue(image, forKey: kCIInputImageKey)
+    filter.setValue(highlightAmount, forKey: "inputHighlightAmount")
+    filter.setValue(shadowAmount, forKey: "inputShadowAmount")
+    return filter.outputImage
+}
 
 func currentFile(name:String)->URL{
     let filePath = #file
@@ -80,5 +88,11 @@ guard let blurImage = applyGuassianBlur(image: image,radius: 2) else{
     print("高斯处理失败")
     exit(0)
 }
-
 saveImage(image: blurImage, fileName: "gas_swift.png")
+
+guard let hsaImage = applyHighlightShadowAdjust(image: image,highlightAmount:1.0,shadowAmount:0.4) else{
+    print("高光阴影处理失败")
+    exit(0)
+}
+saveImage(image: hsaImage, fileName: "hsa_swift.png")
+
