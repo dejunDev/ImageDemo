@@ -145,13 +145,6 @@ def extract_highlight_excluding_multiple(img, threshold=200, white_threshold=254
     return tuple(np.round(avg_highlight_color).astype(int))
 
 
-def calculate_tint_hsl(r, g, b):
-    max_value = 1e6  # 设置一个最大值阈值
-    r = np.clip(r, -max_value, max_value)
-    b = np.clip(b, -max_value, max_value)
-    return (r - b) / (r + b) if (r + b) != 0 else 0
-
-
 # 6110
 image_path = "img_0.png"  # 替换为你的图片路径
 image = cv2.imread(image_path)
@@ -230,46 +223,6 @@ def color_based_white_balance(image, threshold=10):
     return image_rgb[x, y]
 
 
-def cie76_color_diff(c1, c2):
-    """
-    计算两个RGB颜色的CIE76色差。
-    :param c1: 第一个颜色（RGB）
-    :param c2: 第二个颜色（RGB）
-    :return: 返回CIE76色差值
-    """
-    return np.sqrt(np.sum((np.array(c1) - np.array(c2)) ** 2))
-
-
-def find_neutral_point_rgb(image):
-    """
-    使用色差最小法在RGB颜色空间中找出中性点。
-    :param image: 输入图像（BGR格式）。
-    :return: 返回RGB值的中性点像素。
-    """
-    # 将图像从BGR转为RGB
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    # 初始化变量
-    neutral_pixel = None
-    min_color_diff = float('inf')
-    neutral_color = (255, 255, 255)  # 中性灰色
-
-    # 遍历图像中的每个像素
-    for y in range(image_rgb.shape[0]):
-        for x in range(image_rgb.shape[1]):
-            r, g, b = image_rgb[y, x]
-            # 计算当前像素与中性灰色的CIE76色差
-            color_diff = cie76_color_diff((r, g, b), neutral_color)
-
-            # 找到最小色差的像素
-            if color_diff < min_color_diff:
-                min_color_diff = color_diff
-                neutral_pixel = (r, g, b)
-
-    # 返回找到的中性点RGB值
-    return neutral_pixel
-
-
 def find_neutral_point_max_contrast(image):
     """
     使用最大对比度法在Lab颜色空间中找出中性点。
@@ -329,6 +282,53 @@ def find_neutral_point_histogram(image):
     return tuple(image[neutral_pixel[1], neutral_pixel[0]])
 
 
+def cie76_color_diff(c1, c2):
+    """
+    计算两个RGB颜色的CIE76色差。
+    :param c1: 第一个颜色（RGB）
+    :param c2: 第二个颜色（RGB）
+    :return: 返回CIE76色差值
+    """
+    return np.sqrt(np.sum((np.array(c1) - np.array(c2)) ** 2))
+
+
+def find_neutral_point_rgb(image):
+    """
+    使用色差最小法在RGB颜色空间中找出中性点。
+    :param image: 输入图像（BGR格式）。
+    :return: 返回RGB值的中性点像素。
+    """
+    # 将图像从BGR转为RGB
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # 初始化变量
+    neutral_pixel = None
+    min_color_diff = float('inf')
+    neutral_color = (255, 255, 255)  # 中性灰色
+
+    # 遍历图像中的每个像素
+    for y in range(image_rgb.shape[0]):
+        for x in range(image_rgb.shape[1]):
+            r, g, b = image_rgb[y, x]
+            # 计算当前像素与中性灰色的CIE76色差
+            color_diff = cie76_color_diff((r, g, b), neutral_color)
+
+            # 找到最小色差的像素
+            if color_diff < min_color_diff:
+                min_color_diff = color_diff
+                neutral_pixel = (r, g, b)
+
+    # 返回找到的中性点RGB值
+    return neutral_pixel
+
+
+def calculate_tint(r, g, b):
+    max_value = 1e6  # 设置一个最大值阈值
+    r = np.clip(r, -max_value, max_value)
+    b = np.clip(b, -max_value, max_value)
+    return (r - b) / (r + b) if (r + b) != 0 else 0
+
+
 for i in range(10):
     image = cv2.imread(f"img_{i}.png")
     y = find_neutral_point_rgb(image)
@@ -337,7 +337,7 @@ for i in range(10):
     g = y[1]
     b = y[2]
     cct = rgb_to_color_temperature(r, g, b)
-    tint = calculate_tint_hsl(r, g, b)
+    tint = calculate_tint(r, g, b)
     print(f"img_{i}: r:{r} g:{g} b:{b}  估算的色温为: {cct:.2f} K  tint:{tint}")
 
 # [6596.28 -0.80236]
